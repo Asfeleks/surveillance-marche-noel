@@ -39,12 +39,12 @@ jobs:
         with:
           path: deja-signales.json
           key: etat-${{ github.run_id }}
-      # Se relance tout de suite pour le cycle suivant (jusqu'au 10/11 9h30)
+      # Se relance tout de suite pour le cycle suivant (jusqu'au 09/11 13h20)
       - name: Relancer
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$(date +%s)" -lt "$(date -d '2026-11-10T06:30:00Z' +%s)" ]; then
+          if [ "$(date +%s)" -lt "$(date -d '2026-11-09T10:20:00Z' +%s)" ]; then
             gh workflow run surveillance.yml --ref main
           fi
