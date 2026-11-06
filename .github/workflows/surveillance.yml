@@ -27,9 +27,10 @@ jobs:
           path: deja-signales.json
           key: etat-${{ github.run_id }}
           restore-keys: etat-
-      # Vérifie toutes les 5 minutes pendant 5 h 40
+      # Vérifie toutes les 2 minutes pendant 5 h 40
       - run: node check.js --loop 340
         env:
+          INTERVAL_SEC: 120
           CHROME_PATH: /usr/bin/google-chrome
           BOOKING_URL: ${{ secrets.BOOKING_URL }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
@@ -38,12 +39,12 @@ jobs:
         with:
           path: deja-signales.json
           key: etat-${{ github.run_id }}
-      # Se relance tout de suite pour le cycle suivant (jusqu'au 10/11 11h30)
+      # Se relance tout de suite pour le cycle suivant (jusqu'au 10/11 9h30)
       - name: Relancer
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$(date +%s)" -lt "$(date -d '2026-11-10T08:30:00Z' +%s)" ]; then
+          if [ "$(date +%s)" -lt "$(date -d '2026-11-10T06:30:00Z' +%s)" ]; then
             gh workflow run surveillance.yml --ref main
           fi

@@ -62,24 +62,23 @@ async function findSlots() {
 
     const found = new Set();
     for (const day of cfg.daysToWatch) {
-      // Bouton du petit calendrier : "Lundi 9, aucun créneau disponible" si complet
+      // On clique toujours sur le jour (même s'il est marqué complet) et on lit
+      // tous les créneaux affichés : on ne dépend pas seulement de l'étiquette.
       const status = await page.evaluate((d) => {
         const re = new RegExp(`^\\S+ ${d}(,|$)`);
         const btn = [...document.querySelectorAll('button[aria-label]')]
           .find((b) => re.test(b.getAttribute('aria-label')));
         if (!btn) return 'introuvable';
-        const label = btn.getAttribute('aria-label');
-        if (/aucun créneau/i.test(label)) return 'complet';
         btn.click();
-        return 'disponible';
+        return /aucun créneau/i.test(btn.getAttribute('aria-label')) ? 'complet' : 'disponible';
       }, day);
-      log(`Jour ${day} : ${status}`);
       if (status === 'introuvable') throw new Error(`Jour ${day} introuvable sur la page`);
-      if (status !== 'disponible') continue;
       await new Promise((r) => setTimeout(r, 2500));
       const times = await page.evaluate(() =>
         [...document.querySelectorAll('button[data-date-time]')]
           .map((b) => Number(b.getAttribute('data-date-time'))));
+      const ofDay = times.filter((t) => new Date(t + 3 * 3600e3).getUTCDate() === day);
+      log(`Jour ${day} : ${status}, créneaux libres : ${ofDay.map((t) => fmt(t).split(' ').pop()).join(' ') || 'aucun'}`);
       times.filter((t) => t >= from && t < until).forEach((t) => found.add(t));
     }
     return [...found].sort((a, b) => a - b);
