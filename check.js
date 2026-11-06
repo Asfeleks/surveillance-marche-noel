@@ -36,6 +36,16 @@ function fmt(ms) {
 }
 
 async function notify(title, message) {
+  // Sur le Mac : notification avec son + ouverture de la page de réservation
+  if (process.platform === 'darwin') {
+    try {
+      const { execFileSync } = require('child_process');
+      execFileSync('osascript', ['-e',
+        'on run {t, m}\ndisplay notification m with title t sound name "Glass"\nend run',
+        title, message]);
+      if (!process.argv.includes('--test')) execFileSync('open', [cfg.bookingUrl]);
+    } catch (e) { log('Notification Mac échouée :', e.message); }
+  }
   // Notification sur le téléphone via ntfy
   const res = await fetch('https://ntfy.sh/', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
