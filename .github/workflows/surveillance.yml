@@ -1,0 +1,49 @@
+name: Surveillance marché de Noël
+on:
+  workflow_dispatch:
+  schedule:
+    # Filet de sécurité : relance la boucle si jamais la chaîne s'interrompt
+    - cron: "17 * * * *"
+permissions:
+  actions: write
+  contents: read
+concurrency:
+  group: surveillance
+  cancel-in-progress: false
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Mémorise les créneaux déjà signalés d'une exécution à l'autre
+      - uses: actions/cache/restore@v4
+        with:
+          path: deja-signales.json
+          key: etat-${{ github.run_id }}
+          restore-keys: etat-
+      # Vérifie toutes les 5 minutes pendant 5 h 40
+      - run: node check.js --loop 340
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          BOOKING_URL: ${{ secrets.BOOKING_URL }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: deja-signales.json
+          key: etat-${{ github.run_id }}
+      # Se relance tout de suite pour le cycle suivant (jusqu'au 10/11 11h30)
+      - name: Relancer
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date +%s)" -lt "$(date -d '2026-11-10T08:30:00Z' +%s)" ]; then
+            gh workflow run surveillance.yml --ref main
+          fi

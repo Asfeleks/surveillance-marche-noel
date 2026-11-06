@@ -1,0 +1,5 @@
+node_modules/
+journal.log
+deja-signales.json
+test-state.json
+local.json
